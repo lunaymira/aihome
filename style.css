@@ -249,6 +249,28 @@ body {
     margin-bottom: 1rem;
 }
 
+.tariff-section,
+.water-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.tariff-section:first-of-type,
+.water-section:first-of-type {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.tariff-label,
+.water-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--terracotta);
+    margin-bottom: 0.75rem;
+}
+
 .icon-chip {
     display: flex;
     align-items: center;

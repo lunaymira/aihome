@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
     <div class="app">
@@ -16,7 +16,7 @@
                 <h1 class="logo">Дом</h1>
                 <div class="header-status">
                     <span class="status-dot"></span>
-                    <span class="status-text">Сохранено</span>
+                    <span class="status-text">Готово</span>
                 </div>
             </div>
         </header>
@@ -47,11 +47,7 @@
                     </div>
 
                     <form class="meter-form" id="meter-form">
-                        <div class="form-group">
-                            <label class="form-label">Дата снятия показаний</label>
-                            <input type="date" class="form-input" id="reading-date" required>
-                        </div>
-
+                        <!-- ЭЛЕКТРИЧЕСТВО -->
                         <div class="meter-card">
                             <div class="meter-card-header">
                                 <div class="icon-chip">
@@ -61,19 +57,42 @@
                                 </div>
                                 <h3 class="meter-title">Электричество</h3>
                             </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Дата снятия показаний</label>
+                                <input type="date" class="form-input" id="electricity-date" required>
+                            </div>
                             
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Показания (кВт·ч)</label>
-                                    <input type="number" step="0.01" class="form-input" id="electricity-reading" placeholder="12345.67" required>
+                            <div class="tariff-section">
+                                <div class="tariff-label">Тариф Т1 (день)</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Показания (кВт·ч)</label>
+                                        <input type="number" step="0.01" class="form-input" id="electricity-t1-reading" placeholder="12345.67" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Цена за кВт·ч (₽)</label>
+                                        <input type="number" step="0.01" class="form-input price-input" id="electricity-t1-price" placeholder="5.38" required>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Цена за кВт·ч (₽)</label>
-                                    <input type="number" step="0.01" class="form-input" id="electricity-price" placeholder="5.38" required>
+                            </div>
+
+                            <div class="tariff-section">
+                                <div class="tariff-label">Тариф Т2 (ночь)</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Показания (кВт·ч)</label>
+                                        <input type="number" step="0.01" class="form-input" id="electricity-t2-reading" placeholder="6789.01" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Цена за кВт·ч (₽)</label>
+                                        <input type="number" step="0.01" class="form-input price-input" id="electricity-t2-price" placeholder="3.20" required>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- ВОДА -->
                         <div class="meter-card">
                             <div class="meter-card-header">
                                 <div class="icon-chip">
@@ -81,40 +100,39 @@
                                         <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
                                     </svg>
                                 </div>
-                                <h3 class="meter-title">Холодная вода</h3>
+                                <h3 class="meter-title">Вода</h3>
                             </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Показания (м³)</label>
-                                    <input type="number" step="0.001" class="form-input" id="cold-water-reading" placeholder="234.567" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Цена за м³ (₽)</label>
-                                    <input type="number" step="0.01" class="form-input" id="cold-water-price" placeholder="42.15" required>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="meter-card">
-                            <div class="meter-card-header">
-                                <div class="icon-chip icon-chip-hot">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
-                                        <circle cx="12" cy="14" r="2"/>
-                                    </svg>
-                                </div>
-                                <h3 class="meter-title">Горячая вода</h3>
+                            <div class="form-group">
+                                <label class="form-label">Дата снятия показаний</label>
+                                <input type="date" class="form-input" id="water-date" required>
                             </div>
-                            
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label">Показания (м³)</label>
-                                    <input type="number" step="0.001" class="form-input" id="hot-water-reading" placeholder="156.789" required>
+
+                            <div class="water-section">
+                                <div class="water-label">Холодная вода</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Показания (м³)</label>
+                                        <input type="number" step="0.001" class="form-input" id="cold-water-reading" placeholder="234.567" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Цена за м³ (₽)</label>
+                                        <input type="number" step="0.01" class="form-input price-input" id="cold-water-price" placeholder="42.15" required>
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label class="form-label">Цена за м³ (₽)</label>
-                                    <input type="number" step="0.01" class="form-input" id="hot-water-price" placeholder="185.20" required>
+                            </div>
+
+                            <div class="water-section">
+                                <div class="water-label">Горячая вода</div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Показания (м³)</label>
+                                        <input type="number" step="0.001" class="form-input" id="hot-water-reading" placeholder="156.789" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Цена за м³ (₽)</label>
+                                        <input type="number" step="0.01" class="form-input price-input" id="hot-water-price" placeholder="185.20" required>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -123,39 +141,6 @@
                             Рассчитать и сохранить
                         </button>
                     </form>
-                </div>
-
-                <div class="section" id="calculation-section" style="display: none;">
-                    <div class="section-header">
-                        <h2 class="section-title">Расчёт за <em>период</em></h2>
-                    </div>
-
-                    <div class="calculation-card">
-                        <div class="calculation-row">
-                            <span class="calculation-label">Электричество</span>
-                            <span class="calculation-value" id="calc-electricity">—</span>
-                        </div>
-                        <div class="calculation-row">
-                            <span class="calculation-label">Холодная вода</span>
-                            <span class="calculation-value" id="calc-cold-water">—</span>
-                        </div>
-                        <div class="calculation-row">
-                            <span class="calculation-label">Горячая вода</span>
-                            <span class="calculation-value" id="calc-hot-water">—</span>
-                        </div>
-                        <div class="calculation-row calculation-row-total">
-                            <span class="calculation-label">Итого расчёт</span>
-                            <span class="calculation-value calculation-value-total" id="calc-total">—</span>
-                        </div>
-                    </div>
-
-                    <div class="verification-card">
-                        <div class="form-group">
-                            <label class="form-label">Сумма из квитанции (₽)</label>
-                            <input type="number" step="0.01" class="form-input" id="actual-amount" placeholder="0.00">
-                        </div>
-                        <div class="verification-result" id="verification-result"></div>
-                    </div>
                 </div>
 
                 <div class="section" id="history-section">
@@ -177,6 +162,6 @@
     </div>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>

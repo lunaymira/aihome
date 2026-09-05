@@ -4,17 +4,56 @@ tg.expand();
 tg.ready();
 
 const STORAGE_KEY = 'home_meters_readings';
+const PRICES_KEY = 'home_meters_prices';
 
-let readings = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let readings = [];
+let savedPrices = {};
+
+function loadData() {
+    try {
+        const readingsData = localStorage.getItem(STORAGE_KEY);
+        const pricesData = localStorage.getItem(PRICES_KEY);
+        
+        readings = readingsData ? JSON.parse(readingsData) : [];
+        savedPrices = pricesData ? JSON.parse(pricesData) : {};
+        
+        console.log('Загружено показаний:', readings.length);
+        console.log('Загружены цены:', savedPrices);
+    } catch (e) {
+        console.error('Ошибка загрузки данных:', e);
+        readings = [];
+        savedPrices = {};
+    }
+}
+
+function saveData() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(readings));
+        localStorage.setItem(PRICES_KEY, JSON.stringify(savedPrices));
+        console.log('Данные сохранены');
+    } catch (e) {
+        console.error('Ошибка сохранения:', e);
+    }
+}
 
 const form = document.getElementById('meter-form');
-const calculationSection = document.getElementById('calculation-section');
-const historySection = document.getElementById('history-section');
 const historyList = document.getElementById('history-list');
-const actualAmountInput = document.getElementById('actual-amount');
-const verificationResult = document.getElementById('verification-result');
 
-document.getElementById('reading-date').valueAsDate = new Date();
+const electricityDateInput = document.getElementById('electricity-date');
+const waterDateInput = document.getElementById('water-date');
+
+const electricityT1ReadingInput = document.getElementById('electricity-t1-reading');
+const electricityT1PriceInput = document.getElementById('electricity-t1-price');
+const electricityT2ReadingInput = document.getElementById('electricity-t2-reading');
+const electricityT2PriceInput = document.getElementById('electricity-t2-price');
+
+const coldWaterReadingInput = document.getElementById('cold-water-reading');
+const coldWaterPriceInput = document.getElementById('cold-water-price');
+const hotWaterReadingInput = document.getElementById('hot-water-reading');
+const hotWaterPriceInput = document.getElementById('hot-water-price');
+
+electricityDateInput.valueAsDate = new Date();
+waterDateInput.valueAsDate = new Date();
 
 function formatCurrency(amount) {
     return new Intl.NumberFormat('ru-RU', {
@@ -33,13 +72,13 @@ function formatDate(dateString) {
     }).format(date);
 }
 
-function calculateConsumption(current, previous) {
-    if (!previous) return null;
-    return Math.max(0, current - previous);
-}
-
-function getPreviousReading() {
-    return readings.length > 0 ? readings[0] : null;
+function formatShortDate(dateString) {
+    const date = new Date(dateString);
+    return new Intl.DateFormat('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+    }).format(date);
 }
 
 function updateStatus(text, isSuccess = true) {
@@ -60,129 +99,145 @@ function updateStatus(text, isSuccess = true) {
     }
     
     setTimeout(() => {
-        statusText.textContent = 'Сохранено';
+        statusText.textContent = 'Готово';
         headerStatus.style.background = 'var(--success-tint)';
         headerStatus.style.color = 'var(--success)';
         statusDot.style.background = 'var(--success)';
     }, 2000);
 }
 
+function loadSavedPrices() {
+    if (savedPrices.electricityT1) electricityT1PriceInput.value = savedPrices.electricityT1;
+    if (savedPrices.electricityT2) electricityT2PriceInput.value = savedPrices.electricityT2;
+    if (savedPrices.coldWater) coldWaterPriceInput.value = savedPrices.coldWater;
+    if (savedPrices.hotWater) hotWaterPriceInput.value = savedPrices.hotWater;
+}
+
+function savePrices() {
+    savedPrices = {
+        electricityT1: parseFloat(electricityT1PriceInput.value) || 0,
+        electricityT2: parseFloat(electricityT2PriceInput.value) || 0,
+        coldWater: parseFloat(coldWaterPriceInput.value) || 0,
+        hotWater: parseFloat(hotWaterPriceInput.value) || 0
+    };
+    localStorage.setItem(PRICES_KEY, JSON.stringify(savedPrices));
+}
+
+function getPreviousReading(date, type) {
+    const sortedReadings = [...readings].sort((a, b) => {
+        const dateA = new Date(type === 'electricity' ? a.electricityDate : a.waterDate);
+        const dateB = new Date(type === 'electricity' ? b.electricityDate : b.waterDate);
+        return dateB - dateA;
+    });
+    
+    const currentDate = new Date(date);
+    
+    for (let reading of sortedReadings) {
+        const readingDate = new Date(type === 'electricity' ? reading.electricityDate : reading.waterDate);
+        if (readingDate < currentDate) {
+            return reading;
+        }
+    }
+    
+    return null;
+}
+
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     
-    const date = document.getElementById('reading-date').value;
-    const electricityReading = parseFloat(document.getElementById('electricity-reading').value);
-    const electricityPrice = parseFloat(document.getElementById('electricity-price').value);
-    const coldWaterReading = parseFloat(document.getElementById('cold-water-reading').value);
-    const coldWaterPrice = parseFloat(document.getElementById('cold-water-price').value);
-    const hotWaterReading = parseFloat(document.getElementById('hot-water-reading').value);
-    const hotWaterPrice = parseFloat(document.getElementById('hot-water-price').value);
+    console.log('Форма отправлена');
     
-    const previous = getPreviousReading();
+    const electricityDate = electricityDateInput.value;
+    const waterDate = waterDateInput.value;
     
-    const electricityConsumption = previous 
-        ? calculateConsumption(electricityReading, previous.electricity.reading)
+    const electricityT1Reading = parseFloat(electricityT1ReadingInput.value);
+    const electricityT1Price = parseFloat(electricityT1PriceInput.value);
+    const electricityT2Reading = parseFloat(electricityT2ReadingInput.value);
+    const electricityT2Price = parseFloat(electricityT2PriceInput.value);
+    
+    const coldWaterReading = parseFloat(coldWaterReadingInput.value);
+    const coldWaterPrice = parseFloat(coldWaterPriceInput.value);
+    const hotWaterReading = parseFloat(hotWaterReadingInput.value);
+    const hotWaterPrice = parseFloat(hotWaterPriceInput.value);
+    
+    savePrices();
+    
+    const previousElectricity = getPreviousReading(electricityDate, 'electricity');
+    const previousWater = getPreviousReading(waterDate, 'water');
+    
+    const electricityT1Consumption = previousElectricity 
+        ? Math.max(0, electricityT1Reading - previousElectricity.electricityT1Reading)
         : 0;
-    const coldWaterConsumption = previous 
-        ? calculateConsumption(coldWaterReading, previous.coldWater.reading)
-        : 0;
-    const hotWaterConsumption = previous 
-        ? calculateConsumption(hotWaterReading, previous.hotWater.reading)
+    const electricityT2Consumption = previousElectricity 
+        ? Math.max(0, electricityT2Reading - previousElectricity.electricityT2Reading)
         : 0;
     
-    const electricityCost = electricityConsumption * electricityPrice;
+    const coldWaterConsumption = previousWater 
+        ? Math.max(0, coldWaterReading - previousWater.coldWaterReading)
+        : 0;
+    const hotWaterConsumption = previousWater 
+        ? Math.max(0, hotWaterReading - previousWater.hotWaterReading)
+        : 0;
+    
+    const electricityT1Cost = electricityT1Consumption * electricityT1Price;
+    const electricityT2Cost = electricityT2Consumption * electricityT2Price;
+    const electricityTotalCost = electricityT1Cost + electricityT2Cost;
+    
     const coldWaterCost = coldWaterConsumption * coldWaterPrice;
     const hotWaterCost = hotWaterConsumption * hotWaterPrice;
-    const totalCost = electricityCost + coldWaterCost + hotWaterCost;
+    const waterTotalCost = coldWaterCost + hotWaterCost;
+    
+    const totalCost = electricityTotalCost + waterTotalCost;
     
     const reading = {
         id: Date.now(),
-        date,
-        electricity: {
-            reading: electricityReading,
-            price: electricityPrice,
-            consumption: electricityConsumption,
-            cost: electricityCost
-        },
-        coldWater: {
-            reading: coldWaterReading,
-            price: coldWaterPrice,
-            consumption: coldWaterConsumption,
-            cost: coldWaterCost
-        },
-        hotWater: {
-            reading: hotWaterReading,
-            price: hotWaterPrice,
-            consumption: hotWaterConsumption,
-            cost: hotWaterCost
-        },
+        electricityDate,
+        waterDate,
+        electricityT1Reading,
+        electricityT1Price,
+        electricityT1Consumption,
+        electricityT1Cost,
+        electricityT2Reading,
+        electricityT2Price,
+        electricityT2Consumption,
+        electricityT2Cost,
+        electricityTotalConsumption: electricityT1Consumption + electricityT2Consumption,
+        electricityTotalCost,
+        coldWaterReading,
+        coldWaterPrice,
+        coldWaterConsumption,
+        coldWaterCost,
+        hotWaterReading,
+        hotWaterPrice,
+        hotWaterConsumption,
+        hotWaterCost,
+        waterTotalCost,
         totalCost
     };
     
-    readings.unshift(reading);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(readings));
+    console.log('Новое показание:', reading);
     
-    displayCalculation(reading, previous);
+    readings.push(reading);
+    saveData();
+    
     renderHistory();
-    updateStatus('Расчёт выполнен');
+    updateStatus('Показания сохранены!');
     
-    calculationSection.style.display = 'block';
-    calculationSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    form.reset();
+    electricityDateInput.valueAsDate = new Date();
+    waterDateInput.valueAsDate = new Date();
+    loadSavedPrices();
     
     if (tg.HapticFeedback) {
         tg.HapticFeedback.notificationOccurred('success');
     }
-});
-
-function displayCalculation(reading, previous) {
-    const electricityText = previous
-        ? `${reading.electricity.consumption.toFixed(2)} кВт·ч × ${reading.electricity.price.toFixed(2)} ₽ = ${formatCurrency(reading.electricity.cost)}`
-        : `${formatCurrency(reading.electricity.cost)} (первое показание)`;
     
-    const coldWaterText = previous
-        ? `${reading.coldWater.consumption.toFixed(3)} м³ × ${reading.coldWater.price.toFixed(2)} ₽ = ${formatCurrency(reading.coldWater.cost)}`
-        : `${formatCurrency(reading.coldWater.cost)} (первое показание)`;
-    
-    const hotWaterText = previous
-        ? `${reading.hotWater.consumption.toFixed(3)} м³ × ${reading.hotWater.price.toFixed(2)} ₽ = ${formatCurrency(reading.hotWater.cost)}`
-        : `${formatCurrency(reading.hotWater.cost)} (первое показание)`;
-    
-    document.getElementById('calc-electricity').textContent = electricityText;
-    document.getElementById('calc-cold-water').textContent = coldWaterText;
-    document.getElementById('calc-hot-water').textContent = hotWaterText;
-    document.getElementById('calc-total').textContent = formatCurrency(reading.totalCost);
-    
-    actualAmountInput.value = '';
-    verificationResult.className = 'verification-result';
-    verificationResult.textContent = '';
-}
-
-actualAmountInput.addEventListener('input', () => {
-    const actualAmount = parseFloat(actualAmountInput.value);
-    
-    if (!actualAmount || isNaN(actualAmount)) {
-        verificationResult.className = 'verification-result';
-        verificationResult.textContent = '';
-        return;
-    }
-    
-    const calculatedAmount = readings[0].totalCost;
-    const difference = actualAmount - calculatedAmount;
-    const percentDiff = (Math.abs(difference) / calculatedAmount * 100).toFixed(1);
-    
-    if (Math.abs(difference) < 0.01) {
-        verificationResult.className = 'verification-result match';
-        verificationResult.textContent = '✓ Суммы совпадают';
-    } else if (difference > 0) {
-        verificationResult.className = 'verification-result mismatch';
-        verificationResult.textContent = `⚠ Переплата ${formatCurrency(Math.abs(difference))} (${percentDiff}%)`;
-    } else {
-        verificationResult.className = 'verification-result mismatch';
-        verificationResult.textContent = `⚠ Недоплата ${formatCurrency(Math.abs(difference))} (${percentDiff}%)`;
-    }
+    document.getElementById('history-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 function renderHistory() {
+    console.log('Отрисовка истории:', readings.length, 'записей');
+    
     if (readings.length === 0) {
         historyList.innerHTML = `
             <div class="empty-state">
@@ -196,29 +251,37 @@ function renderHistory() {
         return;
     }
     
-    historyList.innerHTML = readings.map((reading, index) => {
-        const previous = readings[index + 1];
-        const showConsumption = previous !== undefined;
+    const sortedReadings = [...readings].sort((a, b) => {
+        const dateA = new Date(Math.max(new Date(a.electricityDate), new Date(a.waterDate)));
+        const dateB = new Date(Math.max(new Date(b.electricityDate), new Date(b.waterDate)));
+        return dateB - dateA;
+    });
+    
+    historyList.innerHTML = sortedReadings.map(reading => {
+        const hasConsumption = reading.electricityTotalConsumption > 0 || reading.coldWaterConsumption > 0 || reading.hotWaterConsumption > 0;
         
         return `
             <div class="history-item" data-id="${reading.id}">
                 <div class="history-item-header">
-                    <span class="history-date">${formatDate(reading.date)}</span>
+                    <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                        <span class="history-date">⚡ ${formatShortDate(reading.electricityDate)}</span>
+                        <span class="history-date" style="font-size: 0.875rem; color: var(--muted);">💧 ${formatShortDate(reading.waterDate)}</span>
+                    </div>
                     <span class="history-total">${formatCurrency(reading.totalCost)}</span>
                 </div>
-                ${showConsumption ? `
+                ${hasConsumption ? `
                     <div class="history-details">
                         <div class="history-detail">
                             <span class="history-detail-label">Электричество</span>
-                            <span class="history-detail-value">${reading.electricity.consumption.toFixed(1)} кВт·ч</span>
+                            <span class="history-detail-value">${reading.electricityTotalConsumption.toFixed(1)} кВт·ч</span>
                         </div>
                         <div class="history-detail">
                             <span class="history-detail-label">Холодная</span>
-                            <span class="history-detail-value">${reading.coldWater.consumption.toFixed(2)} м³</span>
+                            <span class="history-detail-value">${reading.coldWaterConsumption.toFixed(2)} м³</span>
                         </div>
                         <div class="history-detail">
                             <span class="history-detail-label">Горячая</span>
-                            <span class="history-detail-value">${reading.hotWater.consumption.toFixed(2)} м³</span>
+                            <span class="history-detail-value">${reading.hotWaterConsumption.toFixed(2)} м³</span>
                         </div>
                     </div>
                 ` : `
@@ -242,31 +305,33 @@ function renderHistory() {
 }
 
 function showReadingDetails(reading) {
-    const index = readings.findIndex(r => r.id === reading.id);
-    const previous = readings[index + 1];
+    const hasConsumption = reading.electricityTotalConsumption > 0 || reading.coldWaterConsumption > 0 || reading.hotWaterConsumption > 0;
     
-    let message = `📅 ${formatDate(reading.date)}\n\n`;
+    let message = `📊 ДЕТАЛИ ПОКАЗАНИЙ\n\n`;
     
-    if (previous) {
-        message += `⚡ Электричество:\n`;
-        message += `   ${previous.electricity.reading.toFixed(2)} → ${reading.electricity.reading.toFixed(2)} кВт·ч\n`;
-        message += `   Расход: ${reading.electricity.consumption.toFixed(2)} кВт·ч × ${reading.electricity.price.toFixed(2)} ₽ = ${formatCurrency(reading.electricity.cost)}\n\n`;
-        
-        message += `💧 Холодная вода:\n`;
-        message += `   ${previous.coldWater.reading.toFixed(3)} → ${reading.coldWater.reading.toFixed(3)} м³\n`;
-        message += `   Расход: ${reading.coldWater.consumption.toFixed(3)} м³ × ${reading.coldWater.price.toFixed(2)} ₽ = ${formatCurrency(reading.coldWater.cost)}\n\n`;
-        
-        message += `🔥 Горячая вода:\n`;
-        message += `   ${previous.hotWater.reading.toFixed(3)} → ${reading.hotWater.reading.toFixed(3)} м³\n`;
-        message += `   Расход: ${reading.hotWater.consumption.toFixed(3)} м³ × ${reading.hotWater.price.toFixed(2)} ₽ = ${formatCurrency(reading.hotWater.cost)}\n\n`;
+    message += `⚡ ЭЛЕКТРИЧЕСТВО (${formatShortDate(reading.electricityDate)})\n`;
+    if (hasConsumption && reading.electricityTotalConsumption > 0) {
+        message += `Т1 (день): ${reading.electricityT1Consumption.toFixed(2)} кВт·ч × ${reading.electricityT1Price.toFixed(2)} ₽ = ${formatCurrency(reading.electricityT1Cost)}\n`;
+        message += `Т2 (ночь): ${reading.electricityT2Consumption.toFixed(2)} кВт·ч × ${reading.electricityT2Price.toFixed(2)} ₽ = ${formatCurrency(reading.electricityT2Cost)}\n`;
+        message += `Итого: ${formatCurrency(reading.electricityTotalCost)}\n\n`;
     } else {
-        message += `⚡ Электричество: ${reading.electricity.reading.toFixed(2)} кВт·ч\n`;
-        message += `💧 Холодная вода: ${reading.coldWater.reading.toFixed(3)} м³\n`;
-        message += `🔥 Горячая вода: ${reading.hotWater.reading.toFixed(3)} м³\n\n`;
-        message += `(Первое показание, расход не рассчитывается)\n\n`;
+        message += `Т1: ${reading.electricityT1Reading.toFixed(2)} кВт·ч\n`;
+        message += `Т2: ${reading.electricityT2Reading.toFixed(2)} кВт·ч\n`;
+        message += `(первое показание)\n\n`;
     }
     
-    message += `💰 Итого: ${formatCurrency(reading.totalCost)}`;
+    message += `💧 ВОДА (${formatShortDate(reading.waterDate)})\n`;
+    if (hasConsumption && (reading.coldWaterConsumption > 0 || reading.hotWaterConsumption > 0)) {
+        message += `Холодная: ${reading.coldWaterConsumption.toFixed(3)} м³ × ${reading.coldWaterPrice.toFixed(2)} ₽ = ${formatCurrency(reading.coldWaterCost)}\n`;
+        message += `Горячая: ${reading.hotWaterConsumption.toFixed(3)} м³ × ${reading.hotWaterPrice.toFixed(2)} ₽ = ${formatCurrency(reading.hotWaterCost)}\n`;
+        message += `Итого: ${formatCurrency(reading.waterTotalCost)}\n\n`;
+    } else {
+        message += `Холодная: ${reading.coldWaterReading.toFixed(3)} м³\n`;
+        message += `Горячая: ${reading.hotWaterReading.toFixed(3)} м³\n`;
+        message += `(первое показание)\n\n`;
+    }
+    
+    message += `💰 Общая сумма: ${formatCurrency(reading.totalCost)}`;
     
     tg.showAlert(message);
     
@@ -292,4 +357,8 @@ document.querySelectorAll('.tab').forEach(tab => {
     });
 });
 
+loadData();
+loadSavedPrices();
 renderHistory();
+
+console.log('Приложение инициализировано');
